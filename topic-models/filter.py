@@ -4,7 +4,7 @@ import nltk
 wordList = {}
 commonWords = {}
 wordCount = 0
-minDocLength = 140
+minDocLength = 100
 #nltk.download('stopwords')
 #nltk.download('wordnet')
 
