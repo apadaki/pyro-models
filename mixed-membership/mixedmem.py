@@ -7,8 +7,8 @@ from pyro.infer import SVI, Trace_ELBO
 import matplotlib.pyplot as plt
 
 def data_generation(K, N, J, n):
-    var_param_1 = 2
-    var_param_2 = 3
+    var_param_1 = 1
+    var_param_2 = 1
     var_param_3 = [[None] * K for _ in range(J)]
     for j in range(J):
         for k in range(K):
@@ -51,7 +51,7 @@ print(data)
 
 def model(K, N, J, n, data):
     var_param_1 = 2
-    var_param_2 = 3
+    var_param_2 = 1
     var_param_3 = [[None] * K for _ in range(J)]
     for j in range(J):
         for k in range(K):
@@ -83,8 +83,8 @@ def model(K, N, J, n, data):
     return y
 
 def guide(K, N, J, n, data):
-    var_param_1 = pyro.param("var_param_1", torch.tensor(2.5), constraint = constraints.positive) # Finalize initial guesses later 
-    var_param_2 = pyro.param("var_param_2", torch.tensor(3.5), constraint = constraints.positive) 
+    var_param_1 = pyro.param("var_param_1", torch.tensor(1), constraint = constraints.positive) # Finalize initial guesses later 
+    var_param_2 = pyro.param("var_param_2", torch.tensor(1), constraint = constraints.positive) 
     var_param_3 = [[None] * K for _ in range(J)]
     var_param_4 = pyro.param("var_param_4", torch.ones(K), constraint = constraints.positive)
     for j in range(J):
@@ -98,22 +98,22 @@ def guide(K, N, J, n, data):
         for k in range(K):
             pyro.sample("lambda_data_j{}k{}".format(j, k), pyro.distributions.Dirichlet(var_param_3[j][k]))
 
-    for i in pyro.plate("membership_loop", N):
-        # sample g_i from dirichlet distribution
-        g[i] = pyro.sample("gdata_{}".format(i), pyro.distributions.Dirichlet(alpha0*xi))
+    # for i in pyro.plate("membership_loop", N):
+    #     # sample g_i from dirichlet distribution
+    #     g[i] = pyro.sample("gdata_{}".format(i), pyro.distributions.Dirichlet(alpha0*xi))
 
-        for j in pyro.plate("question_loop_{}".format(i), J):
-            # sample z_ij from discrete distribution
-            z[i][j] = pyro.sample("zdata_{}{}".format(i, j), pyro.distributions.Categorical(g[i]))
+    #     for j in pyro.plate("question_loop_{}".format(i), J):
+    #         # sample z_ij from discrete distribution
+    #         z[i][j] = pyro.sample("zdata_{}{}".format(i, j), pyro.distributions.Categorical(g[i]))
                 
 # print("\n"+str(model(2, 5, 4, [3, 2, 1, 4], data)))
 
 # set up the optimizer
-adam_params = {"lr": 0.01, "betas": (0.90, 0.999)}
+adam_params = {"lr": 0.05, "betas": (0.09, 0.99)}
 optimizer = Adam(adam_params)
 
 # setup the inference algorithm
-svi = SVI(model, guide, optimizer, loss=Trace_ELBO())
+svi = SVI(model, guide, optimizer, loss=Trace_ELBO(max_plate_nesting=2))
 
 n_steps = 2500
 
@@ -122,7 +122,7 @@ ELBO_CHANGES = []
 # do gradient steps
 for step in range(n_steps):
     ELBO = str(svi.step(CLASSES, INDIVIDUALS, QUESTIONS, NUM_CHOICES, data))
-    if step % 10 == 0:
+    if step % 100 == 0:
         print('n =', step)
         ELBO_CHANGES.append(ELBO)
         # print(ELBO)
